@@ -1,0 +1,28 @@
+.page-row{
+  display: flex  !important;
+  align-items: center;
+  justify-content: center;
+}
+
+
+#page-footer{
+  height: auto;
+  padding-bottom: 20px;
+}
+
+.hero .overlay-tl {
+  top: 25px;
+  left: 45px;
+}
+
+.hero .overlay-tl h1 {
+  font-size: 20px;
+}
+
+.active{
+  background: #eeeeee !important;
+}
+
+.navbar-default .navbar-nav>li>a{
+  cursor: pointer;
+}
