@@ -1,171 +1,105 @@
-# Headless Tridion Sites React Example App
+# 🧩 headless-xpm-react
 
-This React application demonstrates how to use the `headless-xpm-react` package to make components editable in RWS Tridion Experience Space.
+A lightweight React package that adds edit links to your components or pages, enabling quick access to [RWS](https://rws.com) [Tridion Sites Experience Space](https://www.rws.com/content-management/tridion/sites/) (XPM) — ideal for headless CMS setups.
 
-Follow the steps to use the **headless-xpm-react** or checkout our example-react-app.
 
-##  Prerequisites
+## ✨ Features
 
-- Node.js - Latest
-- Tridion Sites 10 - Don't have <a href="https://www.rws.com/content-management/tridion/sites/" target="_blank">Tridion Sites</a> installed, Reach out to <a href="https://rws.com" title="rws" target="_blank">RWS</a> Sales
-- React Types "@types/react": "^18.2.37", "@types/react-dom": "^18.2.18" and above
+- Adds a visual edit icon/toolbar over React components
 
----
+- Opens Tridion Experience Space (XPM) directly to the associated item (Page or Component)
 
-## Configure the Example App
+- Works in staging environments only (as required by XPM)
 
-- Navigate to the root directory of the React app and open it in your preferred editor.
+- Lightweight and non-intrusive
 
-- Configure Environment Variables
+## 🛠 Requirements
 
-    Edit the `.env` file in the root and set the following variables:
+- Tridion Sites 10.1+ 
 
-    Tridion Experience Space editor URL
+## 📦 Installation
 
-    ```env
-    VITE_EXP_SPACE_EDITOR_URL=https://domain.com/ui/editor
-    ```
-
-    Tridion GraphQL Endpoint
-
-    ```env
-    VITE_TRIDION_SITES_GRAPHQL_URL=https://domain:8081/cd/api
-    ```
-
-    Tridion Publication and Component IDs
-
-    ```env
-    VITE_TRIDION_SITES_PUBLICATION_ID=5
-
-    VITE_TRIDION_SITES_COMPONENT_ID=283
-    ```
-
-    ```env
-    VITE_TRIDION_SITES_STAGING=true
-    ```
----
-
-## Installation
-
-### Install Dependencies
-        
 ```sh
-npm install headless-xpm-react
+    npm install headless-xpm-react
 ```
+## 🔧 Basic Usage
 
-### Run the App
-
-    npm run dev
-		
-Visit to http://localhost:{PORT}		
-		
----		
-		
-	
-
-	
-## headless-xpm-react package usage	
- 
-`App.tsx`
+1. Wrap your app in <HeadlessXpmProvider />
 
 ```tsx
 
-    import axios from "axios"
     import {  HeadlessXpmProvider } from "headless-xpm-react";
 
-    import { TYPED_COMPONENT_QUERY_VARIABLES } from "./typedComponentQueryVariables"
-    import { TYPED_COMPONENT_QUERY } from "./typedCompnentQuery";
-    import { useEffect, useState } from "react"
-    import type { IComponentProps } from "./types";
-
-    import CardComponent from "./components/CardComponent";
-
-    const App = () => {
-        const [componentData, setCompnentData] = useState<IComponentProps | null>(null)
-        useEffect(() => {
-            getComponentData()
-        }, [])
-
-        const getComponentData = async () => {
-            const typedComponentQuery = {
-                query: TYPED_COMPONENT_QUERY,
-                variables: TYPED_COMPONENT_QUERY_VARIABLES
-            }
-            const response = await axios.post(import.meta.env.VITE_TRIDION_SITES_GRAPHQL_URL, typedComponentQuery)
-            if(response.data.data.typedComponent!==null){
-                setCompnentData(response.data.data.typedComponent)
-            }
-        }
-
-        return (
-            <HeadlessXpmProvider 
-                editorUrl={import.meta.env.VITE_EXP_SPACE_EDITOR_URL}
-                staging={true} 
-                showExpSpaceEditor={true} 
-                showPageEditorLink={true}
-            >
-                <div className="flex items-center justify-center h-screen w-lg m-auto">
-                    <CardComponent componentData={componentData as IComponentProps} />
-                </div>
-            </HeadlessXpmProvider>
-        )
-    }
-
-    export default App
+    <HeadlessXpmProvider 
+        editorUrl={import.meta.env.VITE_EXP_SPACE_EDITOR_URL}
+        staging={true} 
+        showExpSpaceEditor={true} 
+        showPageEditorLink={true}
+    >
+        <App />
+    </HeadlessXpmProvider>
+        
 ```
+
+2. Add an edit icon with <HeadlessXpmEditor />
+   
+```jsx
+    import { HeadlessXpmEditor } from "headless-xpm-react"
+
+    <HeadlessXpmEditor
+        tcmId="tcm:5-283"
+        isPage={false}
+    >
+        <div>
+            <h1>Article Title</h1>
+            <p>Content body...</p>
+        </div>
+    </HeadlessXpmEditor>
+```
+
+When viewed in a staging environment, an edit icon will appear that opens the corresponding item in Experience Space.
+
+## 🧩 API Reference
 
 ### `<HeadlessXpmProvider />` Props
 
 
 | Prop                 | Type                  | Description                     | Required?               |
 | -------------------- | --------------------- | ------------------------------- | ----------------------- |
-| `editorUrl`          | `string`              | URL to open in Experience Space | ✅ Yes                   |
-| `children`           | `React.ReactNode`     | Children to wrap                | ✅ Yes                   |
-| `staging`            | `boolean`             | Enable/Disable the headless xpm | ❌ No (default: `false`) | 
-| `icon`               | `React.ReactNode`     | Custom SVG/icon                 | ❌ No                    |
-| `showExpSpaceEditor` | `boolean`             | Show bottom toolbar             | ❌ No (default: `true`)  |
-| `showPageEditorLink` | `boolean`             | Show page edit button           | ❌ No (default: `false`) |
+| `editorUrl`          | `string`              | URL to the Experience Space editor | ✅ Yes                   |
+| `children`           | `React.ReactNode`     | The app or section to wrap              | ✅ Yes                   |
+| `staging`            | `boolean`             | Enable the toolbar only in staging | ❌ No (default: `false`) | 
+| `icon`               | `React.ReactNode`     | Custom icon element                 | ❌ No                    |
+| `showExpSpaceEditor` | `boolean`             | Show/hide the editor toolbar             | ❌ No (default: `true`)  |
+| `showPageEditorLink` | `boolean`             | Show an extra link for the current page           | ❌ No (default: `false`) |
 
 ---
 
-`CardComponent.tsx`
-
-```jsx
-    import { HeadlessXpmEditor } from "headless-xpm-react"
-
-    const CardComponent = ({ componentData }: CardComponentProps) => {
-        return (
-            <HeadlessXpmEditor 
-                tcmId={`tcm:${componentData?.publicationId}-${componentData?.itemId}`}
-                isPage={true} // isPage true allows to navigate to page and false navigates to Component
-                >
-                <Card className="w-full h-auto hover:border-[#007373] shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="mt-2">{componentData?.headline}</CardTitle>
-                        <CardDescription>{componentData?.articleBody[0]?.subheading}</CardDescription>
-                    </CardHeader>
-                    <CardContent dangerouslySetInnerHTML={{ __html: componentData?.articleBody[0]?.content?.html as string }} />
-                </Card>
-            </HeadlessXpmEditor>
-        )
-    }
-
-```
 
 ### `<HeadlessXpmEditor />` Props
 
 | Prop                 | Type                  | Description                         | Required?                     |
 | ---------------------| ----------------------| ----------------------------------- | --------------------------    |
-| `tcmId`              | `string`              | TCM URI of the component or page    | ✅ Yes                       |
-| `children`           | `React.ReactNode`     | Editable content                    | ✅ Yes                       |
-| `isPage`             | `boolean`             | Whether this is a Page or Component | ❌ No (default: `false`)     |
-| `linkStyle`          | `React.CSSProperties` | Custom style for the link icon      | ❌ No                        |
-| `iconStyle`          | `React.CSSProperties` | Style for the icon                  | ❌ No                        |
-| `containerStyle`     | `React.CSSProperties` | Wrapper div style                   | ❌ No                        |
-| `contentStyle`       | `React.CSSProperties` | Content wrapper style               | ❌ No                        |
+| `tcmId`              | `string`              | TCM URI of the Page or Component    | ✅ Yes                       |
+| `children`           | `React.ReactNode`     | The content to wrap                    | ✅ Yes                       |
+| `isPage`             | `boolean`             | Is this a Page (true) or Component (false)? | ❌ No (default: `false`)     |
+| `linkStyle`          | `React.CSSProperties` | Custom CSS for the link element     | ❌ No                        |
+| `iconStyle`          | `React.CSSProperties` | CSS for the icon                 | ❌ No                        |
+| `containerStyle`     | `React.CSSProperties` | CSS for the outer wrapper                  | ❌ No                        |
+| `contentStyle`       | `React.CSSProperties` | CSS for the editable content area              | ❌ No                        |
 
 
+## 👉 Example React Apps
 
-## Exmaple React App
+See a working implementation in the example project:
 
-- Navigate to Tridion Sites headless XPM <a href="https://github.com/ComponentContentAlliance/TridionSites-Utilities-xpm-minimal-react/tree/main/examples" target="_blank">Github</a> for Examples 
+- [Example React App](https://github.com/RWS-Open/tridion-sites-preview-xpmlite-react)
+
+
+## 🛠 Best Practices
+
+- Works only in staging environments where Experience Space is accessible
+
+- Use valid TCM URIs (tcm:pubId-itemId) for pages or components
+
+- Hide the edit toolbar in production by setting staging={false}
