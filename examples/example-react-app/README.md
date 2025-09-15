@@ -1,51 +1,36 @@
 
-# Vite React App with Headless Tridion Integration
+# 🧩 Example Vite React App with Tridion Sites Experience Space Integration
 
-This README provides a step-by-step guide to create a new React application using **Vite**, and integrate the <a href="https://www.npmjs.com/package/headless-xpm-react" target="_blank">`headless-xpm-react`</a> package to enable Tridion Experience Space (XPM) editing features.
+This example demonstrates how to integrate the [headless-xpm-react](https://www.npmjs.com/package/headless-xpm-react) package into a modern Vite + React + TypeScript application to enable edit links to RWS Tridion Sites Experience Space (XPM) for pages or components.
 
----
 
-### Prerequisites
+## 🔧 Installation & Setup
 
-- Node.js - Latest
-- Tridion Sites 10 - Don't have <a href="https://www.rws.com/content-management/tridion/sites/">Tridion Sites</a> installed, Reach out to <a href="https://rws.com" title="rws" target="_blank">RWS</a> Sales
+### 1. Create new React App
 
----
-
-## Installation
-
-### Create new React App
-
-- Create a New Vite React App by running the below command in command prompt
-
-    ```bash
-    npm create vite@latest my-tridion-app -- --template react-ts
-    cd my-tridion-app
-    npm install
-    ```
-
----
-
-### Install headless-xpm-react 
 
 ```bash
-    npm install headless-xpm-react
+npm create vite@latest my-tridion-app -- --template react-ts
+cd my-tridion-app
+npm install
 ```
-The package is available in the npm repository <a href="https://www.npmjs.com/package/headless-xpm-react" target="_blank">headless-react-app</a>
 
-> The above package adds support for Tridion XPM integration with React components.
 
-### Install axios 
+### 2. Install Dependencies
 
 ```bash
-npm install axios
+npm install headless-xpm-react axios
 ```
 
----
+✅ headless-xpm-react adds support for Tridion Experience Space edit links
 
-### Configure Environment Variables
+✅ axios is used for fetching data via GraphQL
 
-- Create a `.env` file in the project root:
+
+
+### 3. Configure Environment Variables
+
+- Create a `.env` file in the root of your project:
 
     ```env
         VITE_EXP_SPACE_EDITOR_URL=https://domain.com/ui/editor
@@ -57,297 +42,161 @@ npm install axios
 
     > These values are used to configure the editor and backend data sources.
 
----
 
-## Update App.tsx
-
-- Remove the entire content of the /src/App.tsx and update as below
-
-    `App.tsx`
-
-    ```tsx
-        const App = () => {
-            return(
-
-            )
-        }
-        export default App
-    ```
-
-- Import the following react packages in src/App.tsx
-
-    - import React from 'react';
-    - import axios from 'axios';
+## ⚙️ App Integration
 
 
-- Create Graphql query and variables files inside the src/ directory as below
+### 4. Create GraphQL Files
 
-    `typedCompnentQuery.ts`
+`typedCompnentQuery.ts`
 
-    ```tsx
-    export const TYPED_COMPONENT_QUERY = `query typedComponent($componentId:Int!, $publicationId:Int!, $namespaceId:Int!){
-        typedComponent(componentId: $componentId, publicationId: $publicationId, namespaceId: $namespaceId){
+```tsx
+export const TYPED_COMPONENT_QUERY = `query typedComponent($componentId:Int!, $publicationId:Int!, $namespaceId:Int!){
+    typedComponent(componentId: $componentId, publicationId: $publicationId, namespaceId: $namespaceId){
+    title
+    ... on Article{
+        itemId
+        publicationId
         title
-        ... on Article{
-            itemId
-            publicationId
-            title
-            headline
-            articleBody{
-            subheading
-            content{
-                html
-            }
-            media{
-                ... on BinaryComponent{
-                variants{
-                    edges{
-                    node{
-                        downloadUrl
-                    }
-                    }
+        headline
+        articleBody{
+        subheading
+        content{
+            html
+        }
+        media{
+            ... on BinaryComponent{
+            variants{
+                edges{
+                node{
+                    downloadUrl
                 }
                 }
             }
             }
         }
         }
-    }`;
-    ```
+    }
+    }
+}`
+```
 
-    `typedComponentQueryVariables.ts`
+`typedComponentQueryVariables.ts`
 
-    ```tsx
-    export const TYPED_COMPONENT_QUERY_VARIABLES = {
-        componentId: +import.meta.env.VITE_TRIDION_SITES_COMPONENT_ID,
-        namespaceId: 1,
-        publicationId: +import.meta.env.VITE_TRIDION_SITES_PUBLICATION_ID,
+```tsx
+export const TYPED_COMPONENT_QUERY_VARIABLES = {
+    componentId: +import.meta.env.VITE_TRIDION_SITES_COMPONENT_ID,
+    namespaceId: 1,
+    publicationId: +import.meta.env.VITE_TRIDION_SITES_PUBLICATION_ID,
+}
+```
+
+---
+
+### 5. Create the `CardComponent.tsx` to Display Data 
+
+`src/components/CardComponent.tsx`
+
+```tsx
+
+import { HeadlessXpmEditor } from "headless-xpm-react";
+
+interface CardComponentProps {
+  componentData: any; // Replace with proper type if available
+}
+
+const CardComponent = ({ componentData }: CardComponentProps) => {
+  return (
+    <HeadlessXpmEditor
+      tcmId={`tcm:${componentData?.publicationId}-${componentData?.itemId}`}
+      isPage={true}
+    >
+      <div>
+        <h2>{componentData?.headline}</h2>
+        <div
+          dangerouslySetInnerHTML={{
+            __html: componentData?.articleBody[0]?.content?.html as string,
+          }}
+        />
+      </div>
+    </HeadlessXpmEditor>
+  );
+};
+
+export default CardComponent;
+
+```
+---
+
+### 6. App.tsx
+
+```tsx
+
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { HeadlessXpmProvider } from "headless-xpm-react";
+import { TYPED_COMPONENT_QUERY } from "./typedComponentQuery";
+import { TYPED_COMPONENT_QUERY_VARIABLES } from "./typedComponentQueryVariables";
+import CardComponent from "./components/CardComponent";
+
+const App = () => {
+  const [componentData, setCompnentData] = useState(null);
+
+  useEffect(() => {
+    getComponentData();
+  }, []);
+
+  const getComponentData = async () => {
+    const query = {
+      query: TYPED_COMPONENT_QUERY,
+      variables: TYPED_COMPONENT_QUERY_VARIABLES,
     };
-    ```
----
 
-- import graphql query and variables as below
+    const response = await axios.post(
+      import.meta.env.VITE_TRIDION_SITES_GRAPHQL_URL,
+      query
+    );
 
-    `App.tsx`
+    if (response.data?.data?.typedComponent) {
+      setCompnentData(response.data.data.typedComponent);
+    }
+  };
 
-    ```tsx
-        import React from 'react';
-        import axios from 'axios';
-        import { TYPED_COMPONENT_QUERY_VARIABLES } from "./typedComponentQueryVariables"
-        import { TYPED_COMPONENT_QUERY } from "./typedCompnentQuery";
+  return (
+    <HeadlessXpmProvider
+      editorUrl={import.meta.env.VITE_EXP_SPACE_EDITOR_URL}
+      staging={import.meta.env.VITE_TRIDION_SITES_STAGING === "true"}
+      showExpSpaceEditor={true}
+      showPageEditorLink={true}
+    >
+      <div className="flex items-center justify-center h-screen w-lg m-auto">
+        {componentData && (
+          <CardComponent componentData={componentData} />
+        )}
+      </div>
+    </HeadlessXpmProvider>
+  );
+};
+
+export default App;
+```
         
-        const App = () => {
-            return(
+## 🎨 Tailwind Setup (Optional)
+   
+You can use Tailwind CSS for styling, especially if you want to style the toolbar or card.
 
-            )
-        }
-        export default App
-        
+1. Install Tailwind & Vite Plugin
+    ``` bash
+
+    npm install -D tailwindcss postcss autoprefixer
+
+    npx tailwindcss init -p
+
     ```
----
 
-### Import HeadlessXpmProvider
-
-### `<HeadlessXpmProvider />`
+2. Configure Tailwind
 	
-- import HeadlessXpmProvider from headless-xpm-react
-	
-- Insert the HeadlessXpmProvider to App.tsx component as shown below
-	
-    `App.tsx`
-
-    ```tsx
-        import { HeadlessXpmProvider } from 'headless-xpm-react';
-        import React from 'react';
-        import axios from 'axios';
-        import { TYPED_COMPONENT_QUERY_VARIABLES } from "./typedComponentQueryVariables"
-        import { TYPED_COMPONENT_QUERY } from "./typedCompnentQuery";
-        
-        const App = () => {
-            return(
-                <HeadlessXpmProvider
-                    editorUrl={import.meta.env.VITE_EXP_SPACE_EDITOR_URL}
-                    staging={import.meta.env.VITE_TRIDION_SITES_STAGING}
-                    showExpSpaceEditor={true}
-                    showPageEditorLink={true}
-                >
-                
-                </HeadlessXpmProvider>
-            )
-        }
-        export default App
-        
-    ```
-    - editorUrl: import.meta.env.VITE_EXP_SPACE_EDITOR_URL : Tridion sites experience space editor url
-	- showExpSpaceEditor : Show/Hide bottom Tridion Bar
-	- showPageEditorLink: Show/hide page edit button in the bottom Tridion Bar
-	- staging: import.meta.env.VITE_TRIDION_SITES_STAGING : Enable/disable the headless xpm
----
-
-### Fetch Component Data
-
-- Create new function in src/App.tsx inside the app component to fetch the component data and set its response to state as shown below
-
-    ```tsx
-        const getComponentData = async () => {
-            const typedComponentQuery = {
-                query: TYPED_COMPONENT_QUERY,
-                variables: TYPED_COMPONENT_QUERY_VARIABLES
-            }
-            const response = await axios.post(import.meta.env.VITE_TRIDION_SITES_GRAPHQL_URL, typedComponentQuery)
-            if(response.data.data.typedComponent!==null){
-                setCompnentData(response.data.data.typedComponent)
-            }
-    ```
-
-    `App.tsx`
-
-    ```tsx
-        import { HeadlessXpmProvider } from 'headless-xpm-react';
-        import React,{useState, useEffect} from 'react';
-        import axios from 'axios';
-        import { TYPED_COMPONENT_QUERY_VARIABLES } from "./typedComponentQueryVariables"
-        import { TYPED_COMPONENT_QUERY } from "./typedCompnentQuery";
-        
-        const App = () => {
-        
-            const [componentData, setCompnentData] = useState<IComponentProps | null>(null)
-            useEffect(() => {
-                getComponentData()
-            }, [])
-
-            const getComponentData = async () => {
-                const typedComponentQuery = {
-                    query: TYPED_COMPONENT_QUERY,
-                    variables: TYPED_COMPONENT_QUERY_VARIABLES
-                }
-                const response = await axios.post(import.meta.env.VITE_TRIDION_SITES_GRAPHQL_URL, typedComponentQuery)
-                if(response.data.data.typedComponent!==null){
-                    setCompnentData(response.data.data.typedComponent)
-                }
-            }
-            
-            return(
-                <HeadlessXpmProvider 
-                    editorUrl={import.meta.env.VITE_EXP_SPACE_EDITOR_URL} 
-                    staging={import.meta.env.VITE_TRIDION_SITES_STAGING}
-                    showExpSpaceEditor={true} 
-                    showPageEditorLink={true} 
-                >
-                        <div className="flex items-center justify-center h-screen w-lg m-auto">
-                            
-                        </div>
-                </HeadlessXpmProvider>
-            )
-        }
-        export default App
-        
-    ```
-
-## Create CardComponent.tsx 
-
-- Create a new component as CardComponent.tsx inside src/components folder to display the component data and update the code as below 
-
-- HeadlessXpmEditor : headless-xpm-react component from react package
-	
-    `CardComponent.tsx`
-
-    ```tsx
-        interface CardComponentProps {
-            componentData: IComponentProps
-        }
-        import { HeadlessXpmEditor } from "headless-xpm-react";
-
-        const CardComponent = ({ componentData }: CardComponentProps) => {
-            return (
-                <HeadlessXpmEditor 
-                    tcmId={`tcm:${componentData?.publicationId}-${componentData?.itemId}`} 
-                    isPage={true} // isPage true Enables page for editing and false for component
-                > 
-                    <div>
-                        <h2>{componentData?.headline}</h2>
-                        <div
-                        dangerouslySetInnerHTML={{
-                            __html: componentData?.articleBody[0]?.content?.html as string,
-                        }}
-                        />
-                    </div>
-                </HeadlessXpmEditor>
-            );
-        };
-        export default CardComponent;
-    ```
-
-
-## Import CardComponent.tsx
-
-- Import the CardComponent to App.tsx 
-- Pass the componentData as props to CardComponent
-
-    ```tsx
-        <CardComponent componentData={componentData as IComponentProps} />
-    ```
-
-    `App.tsx`
-
-    ```tsx
-        import { HeadlessXpmProvider } from 'headless-xpm-react';
-        import React,{useState, useEffect} from 'react';
-        import axios from 'axios';
-        import { TYPED_COMPONENT_QUERY_VARIABLES } from "./typedComponentQueryVariables";
-        import { TYPED_COMPONENT_QUERY } from "./typedCompnentQuery";
-        
-        import CardComponent from "./components/CardComponent"; 
-        
-        const App = () => {
-        
-            const [componentData, setCompnentData] = useState<IComponentProps | null>(null)
-            useEffect(() => {
-                getComponentData()
-            }, [])
-
-            const getComponentData = async () => {
-                const typedComponentQuery = {
-                    query: TYPED_COMPONENT_QUERY,
-                    variables: TYPED_COMPONENT_QUERY_VARIABLES
-                }
-                const response = await axios.post(import.meta.env.VITE_TRIDION_SITES_GRAPHQL_URL, typedComponentQuery)
-                if(response.data.data.typedComponent!==null){
-                    setCompnentData(response.data.data.typedComponent)
-                }
-            }
-            
-            return(
-                 <HeadlessXpmProvider 
-                    editorUrl={import.meta.env.VITE_EXP_SPACE_EDITOR_URL} 
-                    staging={import.meta.env.VITE_TRIDION_SITES_STAGING}
-                    showExpSpaceEditor={true} 
-                    showPageEditorLink={true} 
-                >
-                    <div className="flex items-center justify-center h-screen w-lg m-auto">
-                        <CardComponent componentData={componentData as IComponentProps} />
-                    </div>
-                </HeadlessXpmProvider>
-            )
-        }
-        export default App
-        
-    ```
----
-
-## Install tailwindcss
-
-- Install Tailwind css for styling the editor
-
-    ```bash
-        npm install tailwindcss @tailwindcss/vite
-    ```
-
-
-	
-## Configure the Vite plugin
-	
-- update vite.config.ts as below
+   - update vite.config.ts as below
 	
     ```ts	
         import { defineConfig } from 'vite'
@@ -359,27 +208,29 @@ npm install axios
             ],
         })
     ```	
-- Remove default css style 
-    
-    Remove default css style from src/index.css and src/app.css
+   - Remove default css style 
 
-## Import tailwindcss
-
-- Import Tailwind css to src/index.css 
+3. Import Tailwind in `src/index.css`
 	
 	`@import "tailwindcss";`
 	
----
 
-## Run application 
- 
-- Navigate to root directory and run the below command in command prompt
+## ▶️ Run the App
 
-    ```bash
-        npm run dev
-    ```
+```bash
+    npm run dev
+```
 
-Visit `http://localhost:5173`
+Then open your browser at:
 
----
+👉 `http://localhost:5173`
 
+If everything is set up correctly, your component will render and show an **edit icon** linking to the relevant **Tridion Experience Space** item (if viewed in staging).
+
+
+
+## 📎 Resources
+
+- [`headless-xpm-react` on NPM](www.npmjs.com/package/headless-xpm-react)
+- [RWS Tridion Sits](https://www.rws.com/content-management/tridion/sites/)
+- [Example Codebase on GitHub](https://github.com/RWS-Open/tridion-sites-preview-xpmlite-react/tree/main/examples)

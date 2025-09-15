@@ -53,6 +53,16 @@
 
 - Moved custom styles from HeadlessXpmProvider to HeadlessXpmEditor
 
+## 2.1.2
+
+### Updated
+
+- Updated Readme Instructions
+
+- Updated Github URL
+
+- Updated License to Apache-2.0
+
 
 
 
